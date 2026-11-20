@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel primary-panel">
+  <div class="panel__head">
+    <h2>会员等级结果</h2>
+    <span>{{ state.level.rows|length }} 户 · 周期 {{ state.level.period }}</span>
+  </div>
+  <div class="gate gate--{{ 'ok' if state.level.gate.publishable else 'bad' }}">
+    <b>净积分对账闸门：{{ '通过，可发布' if state.level.gate.publishable else '未通过，禁止发布' }}</b>
+    <span>会员净积分核对={{ state.level.gate.member_net_matched }} · 净额合计核对={{ state.level.gate.net_total_matched }} · 全局守恒={{ state.level.gate.global_gate_passed }}</span>
+  </div>
+  <div class="column-letters"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span></div>
+  <div class="cells">
+    <table>
+      <thead><tr><th class="row-number">#</th>
+        <th>{{ meta.labels.get('member','会员号') }}</th>
+        <th>{{ meta.labels.get('tier','等级') }}</th>
+        <th>{{ meta.labels.get('net_points','净积分') }}</th>
+        <th>{{ meta.labels.get('change','等级变化') }}</th>
+        <th>{{ meta.labels.get('effective_period','生效周期') }}</th>
+        <th>待生效等级</th>
+        <th>依据摘要</th>
+      </tr></thead>
+      <tbody>
+      {% for row in state.level.rows %}
+        <tr><td class="row-number">{{ loop.index }}</td>
+          <td tabindex="0" title="{{ row.member }}">{{ row.member }}</td>
+          <td tabindex="0" title="{{ row.tier }}">{{ row.tier }}</td>
+          <td tabindex="0" title="{{ row.net_points }}">{{ row.net_points }}</td>
+          <td tabindex="0" title="{{ row.change }}">{{ row.change }}</td>
+          <td tabindex="0" title="{{ state.level.period }}">{{ state.level.period }}</td>
+          <td tabindex="0" title="下一期 {{ state.level.next_period }}">{{ row.pending_tier or '—' }}</td>
+          <td tabindex="0" title="{{ row.basis_digest }}">{{ row.basis_digest[:12] }}…</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="publish-bar">
+    <button id="publish-level" {% if not state.level.gate.publishable %}disabled{% endif %}>发布等级（仅追加）</button>
+    <output id="level-result" aria-live="polite"></output>
+  </div>
+</section>
+<div class="grid">
+  <section class="panel">
+    <div class="panel__head"><h2>已发布生效版本</h2><span>仅追加，永不覆盖</span></div>
+    <div id="published-view"><div class="cells"><table><tbody><tr><td>暂无发布，点击上方按钮。</td></tr></tbody></table></div></div>
+  </section>
+  <section class="panel">
+    <div class="panel__head"><h2>等级历史（全部版本）</h2><span>同一退货重试不重复改级</span></div>
+    <div id="history-view"><div class="cells"><table><tbody><tr><td>暂无历史。</td></tr></tbody></table></div></div>
+  </section>
+</div>
+<script>
+const runId={{ state.manifest.run_id|tojson }};
+function levelTable(rows, cols){
+  if(!rows.length){return '<div class="cells"><table><tbody><tr><td>暂无记录。</td></tr></tbody></table></div>';}
+  const head='<thead><tr><th class="row-number">#</th>'+cols.map(c=>'<th>'+c[1]+'</th>').join('')+'</tr></thead>';
+  const body='<tbody>'+rows.map((r,i)=>'<tr><td class="row-number">'+(i+1)+'</td>'+cols.map(c=>'<td tabindex="0" title="'+(r[c[0]]??'')+'">'+(r[c[0]]??'—')+'</td>').join('')+'</tr>').join('')+'</tbody>';
+  return '<div class="cells"><table>'+head+body+'</table></div>';
+}
+async function refreshLevel(){
+  const hist=await fetch('/api/level/history').then(r=>r.json());
+  const latest={};
+  (hist||[]).forEach(r=>{latest[r.member]=r;});
+  const latestRows=Object.values(latest);
+  document.querySelector('#published-view').innerHTML=levelTable(latestRows,[
+    ['member','会员号'],['tier','等级'],['net_points','净积分'],['version','生效版本'],
+    ['effective_period','生效周期'],['pending_tier','下期待生效'],['change','等级变化']
+  ]);
+  document.querySelector('#history-view').innerHTML=levelTable(hist,[
+    ['member','会员号'],['version','版本'],['tier','等级'],['pending_tier','待生效'],
+    ['net_points','净积分'],['effective_period','生效周期'],['run_id','来源批次']
+  ]);
+}
+document.querySelector('#publish-level')?.addEventListener('click',async e=>{
+  const btn=e.target,out=document.querySelector('#level-result');
+  btn.disabled=true;out.textContent='发布中…';
+  try{
+    const resp=await fetch('/api/level/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:runId})});
+    const data=await resp.json();
+    if(!resp.ok)throw Error(data.detail);
+    out.textContent='发布 '+data.published_count+' 条，幂等跳过 '+data.skipped_count+' 条';
+    await refreshLevel();
+  }catch(err){out.textContent=err.message;}
+  btn.disabled={{ 'false' if state.level.gate.publishable else 'true' }};
+});
+refreshLevel().catch(()=>{});
+</script>
+{% endblock %}

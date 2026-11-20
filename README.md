@@ -4,6 +4,8 @@
 
 七个业务模块：事件采信、权益规则、积分归批、消费到期、退货回拨、余额对账、期末归档。
 
+第八个模块「等级发布」在对账通过的净积分之上重算并发布会员等级：升级当期立即生效，退货/到期跌破门槛时降级下一周期生效、当期已确认礼遇不追回。等级、净积分、生效版本同屏显示；净积分对账未通过禁止发布，同一退货重试按依据摘要幂等不重复改级，等级历史仅追加、发布失败整体回滚保留旧版。入口 `POST /api/level` 重算、`POST /api/level/publish` 发布、`GET /api/level/history` 查询历史（可按 `member` 过滤）。
+
 ```sh
 docker compose up --build -d
 docker compose exec -T app pytest -q

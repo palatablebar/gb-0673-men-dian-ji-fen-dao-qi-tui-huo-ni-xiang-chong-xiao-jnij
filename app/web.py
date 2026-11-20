@@ -13,4 +13,12 @@ def render(request:Request,key):
         state=store.get(DB_PATH,run_id)
     else:
         state=store.save(DB_PATH,evaluate({'dataset':request.query_params.get('dataset','dirty')}))
+    if key=='level':
+        # 合并已发布的当前等级，使提案表呈现"当期保留/下期挂起"的真实预告。
+        from app.modules.level.rules import build_proposal
+        current={r['member']:r['tier'] for r in store.latest_levels(DB_PATH)}
+        if current:
+            merged=build_proposal(state,current)
+            state['level']=merged
+            state['views']['level']['rows']=merged['rows']
     return templates.TemplateResponse(request=request,name=f'{key}.html',context={'meta':META,'key':key,'state':state,'view':state['views'][key]})

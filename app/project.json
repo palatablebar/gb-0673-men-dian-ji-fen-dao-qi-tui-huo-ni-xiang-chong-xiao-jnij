@@ -10,7 +10,8 @@
     "消费到期",
     "退货回拨",
     "余额对账",
-    "期末归档"
+    "期末归档",
+    "等级发布"
   ],
   "rule": "消费先用最早到期批次；退款按原消费分配逆向恢复，已过期部分不得复活",
   "lane": "L5",
@@ -29,7 +30,8 @@
     "consumption",
     "refund",
     "reconcile",
-    "archive"
+    "archive",
+    "level"
   ],
   "labels": {
     "id": "事件号",
@@ -58,6 +60,12 @@
     "refunded": "退款",
     "expired": "到期",
     "points_balanced": "积分守恒",
-    "allocations": "回拨批次"
+    "allocations": "回拨批次",
+    "tier": "等级",
+    "net_points": "净积分",
+    "effective_version": "生效版本",
+    "effective_period": "生效周期",
+    "change": "等级变化",
+    "status": "发布状态"
   }
 }

@@ -6,7 +6,8 @@
     "consumption",
     "refund",
     "reconcile",
-    "archive"
+    "archive",
+    "level"
   ],
   "as_of": "2026-11-03T00:00:00+08:00",
   "rules": {
@@ -14,5 +15,13 @@
       "start": "2026-01-01T00:00:00+08:00",
       "end": "2027-01-01T00:00:00+08:00"
     }
-  }
+  },
+  "level_period": "2026-11",
+  "next_period": "2026-12",
+  "tiers": [
+    {"tier": "黑钻", "min_points": 500},
+    {"tier": "金卡", "min_points": 200},
+    {"tier": "银卡", "min_points": 80},
+    {"tier": "普卡", "min_points": 0}
+  ]
 }
